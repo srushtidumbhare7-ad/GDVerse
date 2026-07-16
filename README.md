@@ -4,6 +4,13 @@ GDVerse is a modern AI-powered Mock Group Discussion platform designed to help s
 
 ---
 
+## 🔗 Live Deployed Application Links
+- **Live Frontend (Vercel)**: [https://gdverse-frontend-q63hb4u4v.vercel.app](https://gdverse-frontend-q63hb4u4v.vercel.app)
+- **Live Backend API (Render)**: [https://gdverse-backend-vrr7.onrender.com](https://gdverse-backend-vrr7.onrender.com)
+- **Free Database Host (Aiven)**: Deployed on a permanent free MySQL cloud database instance.
+
+---
+
 ## 🚀 Features
 
 ### 👥 Real-Time Mock GD Rooms
