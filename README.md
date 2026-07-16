@@ -5,102 +5,116 @@ GDVerse is a modern AI-powered Mock Group Discussion platform designed to help s
 ---
 
 ## 🔗 Live Deployed Application Links
-- **Live Frontend (Vercel)**: [https://gdverse-frontend-q63hb4u4v.vercel.app](https://gdverse-frontend-q63hb4u4v.vercel.app)
-- **Live Backend API (Render)**: [https://gdverse-backend-vrr7.onrender.com](https://gdverse-backend-vrr7.onrender.com)
-- **Free Database Host (Aiven)**: Deployed on a permanent free MySQL cloud database instance.
+
+* **Live Frontend (Vercel)**: https://gdverse-frontend.vercel.app
+* **Live Backend API (Render)**: https://gdverse-backend-vrr7.onrender.com
+* **Free Database Host (Aiven)**: Deployed on a permanent free MySQL cloud database instance.
 
 ---
 
 ## 🚀 Features
 
 ### 👥 Real-Time Mock GD Rooms
-- Create and join discussion rooms
-- Multi-user audio/video communication using WebRTC
-- Raise Hand & FIFO speaking queue
-- Live chat and emoji reactions
-- Polls and screen sharing
-- Active speaker indicator
+
+* Create and join discussion rooms
+* Multi-user audio/video communication using WebRTC
+* Raise Hand & FIFO speaking queue
+* Live chat and emoji reactions
+* Polls and screen sharing
+* Active speaker indicator
 
 ### 🤖 AI Moderator
-- Real-time speech evaluation
-- Grammar and vocabulary analysis
-- Topic relevance detection
-- Confidence and fluency scoring
-- Filler word detection
-- Personalized improvement suggestions
+
+* Real-time speech evaluation
+* Grammar and vocabulary analysis
+* Topic relevance detection
+* Confidence and fluency scoring
+* Filler word detection
+* Personalized improvement suggestions
 
 ### 🎯 Solo Practice Mode
-- AI-generated GD questions
-- Individual practice sessions
-- Instant AI evaluation
-- Grammar and communication feedback
+
+* AI-generated GD questions
+* Individual practice sessions
+* Instant AI evaluation
+* Grammar and communication feedback
 
 ### 📚 GD Topic Library
-- 50+ trending GD topics
-- Categories:
-  - Artificial Intelligence
-  - Technology
-  - Business
-  - Economy
-  - Politics
-  - Social Issues
-- Easy, Medium, Hard difficulty filters
-- AI-generated custom topics
+
+* 50+ trending GD topics
+* Categories:
+
+  * Artificial Intelligence
+  * Technology
+  * Business
+  * Economy
+  * Politics
+  * Social Issues
+* Easy, Medium, Hard difficulty filters
+* AI-generated custom topics
 
 ### 📊 Performance Analytics
-- Overall communication score
-- Weekly improvement tracking
-- Talking time distribution
-- Progress charts
-- Performance history
-- PDF report generation
+
+* Overall communication score
+* Weekly improvement tracking
+* Talking time distribution
+* Progress charts
+* Performance history
+* PDF report generation
 
 ### 🏆 Gamification
-- Global Leaderboard
-- Achievement Badges
-- User Profiles
-- Performance Certificates
+
+* Global Leaderboard
+* Achievement Badges
+* User Profiles
+* Performance Certificates
 
 ### ⚙️ Admin Dashboard
-- Topic Management
-- AI Topic Generator
-- Announcement Center
-- Active Room Monitoring
-- Server Metrics Dashboard
+
+* Topic Management
+* AI Topic Generator
+* Announcement Center
+* Active Room Monitoring
+* Server Metrics Dashboard
 
 ---
 
 # 🛠 Tech Stack
 
 ## Frontend
-- React.js
-- HTML5
-- CSS3
-- JavaScript
-- Vite
+
+* React.js
+* HTML5
+* CSS3
+* JavaScript
+* Vite
 
 ## Backend
-- Java
-- Spring Boot
-- Spring Security
-- REST APIs
-- JWT Authentication
+
+* Java
+* Spring Boot
+* Spring Security
+* REST APIs
+* JWT Authentication
 
 ## Database
-- MySQL
+
+* MySQL
 
 ## Real-Time Communication
-- WebSocket
-- WebRTC
+
+* WebSocket
+* WebRTC
 
 ## AI
-- Gemini API (or any LLM)
+
+* Gemini API (or any LLM)
 
 ---
 
 # 📂 Project Structure
 
-```
+```text
 GDVerse
 │
 ├── frontend
@@ -128,55 +142,60 @@ GDVerse
 
 # 🗄 Database Tables
 
-- Users
-- Topics
-- Discussion Rooms
-- Performance History
-- AI Feedback
+* Users
+* Topics
+* Discussion Rooms
+* Performance History
+* AI Feedback
 
 ---
 
 # 🔐 Authentication
 
-- User Registration
-- Login
-- JWT Authentication
-- Password Encryption using BCrypt
-- Protected REST APIs
+* User Registration
+* Login
+* JWT Authentication
+* Password Encryption using BCrypt
+* Protected REST APIs
 
 ---
 
 # 📌 Core Modules
 
 ## User Module
-- Register
-- Login
-- Profile Management
+
+* Register
+* Login
+* Profile Management
 
 ## Discussion Module
-- Create Room
-- Join Room
-- Live Discussion
-- Speaking Queue
+
+* Create Room
+* Join Room
+* Live Discussion
+* Speaking Queue
 
 ## AI Module
-- Speech Analysis
-- Grammar Evaluation
-- Vocabulary Analysis
-- Topic Relevance
-- Feedback Generation
+
+* Speech Analysis
+* Grammar Evaluation
+* Vocabulary Analysis
+* Topic Relevance
+* Feedback Generation
 
 ## Performance Module
-- Session History
-- Leaderboard
-- Badges
-- Progress Reports
+
+* Session History
+* Leaderboard
+* Badges
+* Progress Reports
 
 ## Admin Module
-- Manage Topics
-- Generate AI Topics
-- Publish Announcements
-- Monitor System
+
+* Manage Topics
+* Generate AI Topics
+* Publish Announcements
+* Monitor System
 
 ---
 
@@ -195,13 +214,13 @@ GDVerse
 
 # 📈 Future Enhancements
 
-- Speech-to-Text Integration
-- Emotion Detection
-- Facial Expression Analysis
-- Company-Specific GD Preparation
-- Multi-language Support
-- Mobile Application
-- AI Voice Moderator
+* Speech-to-Text Integration
+* Emotion Detection
+* Facial Expression Analysis
+* Company-Specific GD Preparation
+* Multi-language Support
+* Mobile Application
+* AI Voice Moderator
 
 ---
 
@@ -213,16 +232,16 @@ Students preparing for placements often lack access to structured Group Discussi
 
 # 🌟 Key Highlights
 
-- AI-Powered Communication Analysis
-- Real-Time Group Discussions
-- Secure JWT Authentication
-- WebRTC Video & Audio Communication
-- Personalized Performance Feedback
-- Solo AI Practice Mode
-- Gamified Learning Experience
-- Leaderboard & Achievement Badges
-- PDF Performance Reports
-- Admin Analytics Dashboard
+* AI-Powered Communication Analysis
+* Real-Time Group Discussions
+* Secure JWT Authentication
+* WebRTC Video & Audio Communication
+* Personalized Performance Feedback
+* Solo AI Practice Mode
+* Gamified Learning Experience
+* Leaderboard & Achievement Badges
+* PDF Performance Reports
+* Admin Analytics Dashboard
 
 ---
 
@@ -231,5 +250,3 @@ Students preparing for placements often lack access to structured Group Discussi
 **Srushti Dumbhare**
 
 Java Full Stack Developer | Computer Engineering Student
-
----
