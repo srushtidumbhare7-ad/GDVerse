@@ -191,16 +191,75 @@ export function Auth({ view, setView, onLogin }) {
     setAuthStep(view);
   }, [view]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (authStep === 'login') {
+      try {
+        const res = await fetch('http://localhost:8080/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: form.email, password: form.password })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          localStorage.setItem('gdverse_token', data.token);
+          onLogin({ 
+            email: data.email, 
+            name: data.name || data.email.split('@')[0],
+            college: data.college,
+            bio: data.bio,
+            skills: data.skills,
+            overallScore: data.overallScore
+          });
+          return;
+        } else {
+          const errorMsg = await res.text();
+          alert(errorMsg || "Login failed! Please check credentials.");
+          return;
+        }
+      } catch (err) {
+        console.warn("Backend auth API down. Falling back to local offline login:", err);
+      }
       onLogin({ email: form.email, name: form.email.split('@')[0] });
     } else if (authStep === 'register') {
-      setAuthStep('verify'); // Transition to email verification OTP
+      try {
+        const res = await fetch('http://localhost:8080/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: form.name, email: form.email, password: form.password })
+        });
+        if (res.ok) {
+          setAuthStep('verify');
+          return;
+        } else {
+          const errorMsg = await res.text();
+          alert(errorMsg || "Registration failed!");
+          return;
+        }
+      } catch (err) {
+        console.warn("Backend auth API down. Falling back to local register:", err);
+      }
+      setAuthStep('verify');
     } else if (authStep === 'verify') {
+      try {
+        const res = await fetch('http://localhost:8080/api/auth/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ otp: form.otp })
+        });
+        if (res.ok) {
+          onLogin({ email: form.email, name: form.name || 'Speaker' });
+          return;
+        } else {
+          alert("Invalid OTP code!");
+          return;
+        }
+      } catch (err) {
+        console.warn("Backend verify API down. Falling back to local verification:", err);
+      }
       onLogin({ email: form.email, name: form.name || 'Speaker' });
     } else if (authStep === 'forgot') {
-      setAuthStep('reset'); // Transition to reset password screen
+      setAuthStep('reset');
     } else if (authStep === 'reset') {
       setAuthStep('login');
     }
@@ -292,7 +351,15 @@ export function Auth({ view, setView, onLogin }) {
 // ==========================================
 // DASHBOARD VIEW
 // ==========================================
-export function Dashboard({ setView, savedTopics = [] }) {
+export function Dashboard({ setView, savedTopics = [], userData, setSelectedTopic }) {
+  const metrics = userData?.metrics || { overall: 82, grammar: 86, confidence: 79, relevance: 92, vocabulary: 74 };
+  const recommendations = userData?.recommendations || [
+    "Decrease frequency of filler words (e.g. \"uhm\", \"basically\", \"actually\") by pausing 1-2 seconds.",
+    "Your topic relevance remains high (92%). Keep mapping arguments to structural framework models (PESTLE).",
+    "Enhance vocabulary strength. Substitute standard words with synonyms like \"systemic change\" or \"pivotal shift\"."
+  ];
+  const name = userData?.profile?.name || 'Speaker';
+
   return (
     <div className="view-container">
       {/* Top Banner Grid */}
@@ -300,7 +367,7 @@ export function Dashboard({ setView, savedTopics = [] }) {
         {/* Welcome Card */}
         <div className="card-glass" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '180px', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.1) 100%)' }}>
           <div>
-            <h1 style={{ fontSize: '28px', fontFamily: 'Outfit' }}>Welcome back, Speaker!</h1>
+            <h1 style={{ fontSize: '28px', fontFamily: 'Outfit' }}>Welcome back, {name}!</h1>
             <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '6px', maxWidth: '400px' }}>
               Your communication score is in the top 15% this week. Keep up the daily practice streaks to hit outstanding level!
             </p>
@@ -322,7 +389,7 @@ export function Dashboard({ setView, savedTopics = [] }) {
             <h3 style={{ fontSize: '16px' }}>Can AI replace Human Emotional Intelligence in Customer Support?</h3>
             <p style={{ color: 'var(--text-muted)', fontSize: '12px', marginTop: '4px' }}>Estimated Duration: 15 mins</p>
           </div>
-          <button className="btn btn-accent btn-sm" style={{ alignSelf: 'flex-start', padding: '8px 16px', fontSize: '12px' }} onClick={() => setView('live_room')}>
+          <button className="btn btn-accent btn-sm" style={{ alignSelf: 'flex-start', padding: '8px 16px', fontSize: '12px' }} onClick={() => { setSelectedTopic({ name: "Can AI replace Human Emotional Intelligence in Customer Support?", category: "Artificial Intelligence", difficulty: "Medium", duration: "15 mins", participants: 6 }); setView('live_room'); }}>
             Accept Challenge
           </button>
         </div>
@@ -345,7 +412,7 @@ export function Dashboard({ setView, savedTopics = [] }) {
               <circle cx="75" cy="75" r="60" className="radial-score-fill" />
             </svg>
             <div className="radial-score-text">
-              <span className="radial-score-num">82</span>
+              <span className="radial-score-num">{metrics.overall}</span>
               <span className="radial-score-lbl">Excellent</span>
             </div>
           </div>
@@ -357,10 +424,10 @@ export function Dashboard({ setView, savedTopics = [] }) {
           <h3 className="card-title"><i className="fa-solid fa-chart-simple"></i> AI Metrics Breakdown</h3>
           <div className="speaking-timeline" style={{ marginTop: '12px' }}>
             {[
-              { skill: 'Grammar Accuracy', score: 86, color: '#22c55e' },
-              { skill: 'Confidence Index', score: 79, color: 'var(--primary-color)' },
-              { skill: 'Topic Relevance', score: 92, color: 'var(--accent-color)' },
-              { skill: 'Vocabulary Density', score: 74, color: '#f59e0b' }
+              { skill: 'Grammar Accuracy', score: metrics.grammar, color: '#22c55e' },
+              { skill: 'Confidence Index', score: metrics.confidence, color: 'var(--primary-color)' },
+              { skill: 'Topic Relevance', score: metrics.relevance, color: 'var(--accent-color)' },
+              { skill: 'Vocabulary Density', score: metrics.vocabulary, color: '#f59e0b' }
             ].map((metric, idx) => (
               <div key={idx} className="speaking-member">
                 <span className="speaking-member-info" style={{ fontSize: '13px', fontWeight: '500' }}>{metric.skill}</span>
@@ -384,10 +451,10 @@ export function Dashboard({ setView, savedTopics = [] }) {
               { topic: 'Is cryptocurrency a viable alternative to fiat cash?', time: 'Today, 6:00 PM', category: 'Economy' },
               { topic: 'Impact of social media on teenage mental health', time: 'Tomorrow, 3:30 PM', category: 'Social Issues' }
             ].map((gd, idx) => (
-              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '12px', borderBottom: idx === 0 ? '1px solid var(--border-color)' : 'none' }}>
+              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '12px', borderBottom: idx === 0 ? '1px solid var(--border-color)' : 'none', cursor: 'pointer' }} onClick={() => { setSelectedTopic({ name: gd.topic, category: gd.category, difficulty: 'Medium', duration: '15 mins', participants: 6 }); setView('live_room'); }} title="Click to start room">
                 <div>
                   <h4 style={{ fontSize: '14px', fontWeight: '600' }}>{gd.topic}</h4>
-                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}><i className="fa-solid fa-clock"></i> {gd.time}</span>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}><i className="fa-solid fa-clock"></i> {gd.time} (Click to launch)</span>
                 </div>
                 <span className="badge badge-economy">{gd.category}</span>
               </div>
@@ -400,18 +467,12 @@ export function Dashboard({ setView, savedTopics = [] }) {
           <div>
             <h3 className="card-title"><i className="fa-solid fa-brain"></i> AI Improvement Recommendations</h3>
             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
-              <li style={{ fontSize: '13px', display: 'flex', gap: '10px' }}>
-                <i className="fa-solid fa-circle-exclamation" style={{ color: '#f59e0b', marginTop: '2px' }}></i>
-                <span>Decrease frequency of filler words (e.g. "uhm", "basically", "actually") by pausing 1-2 seconds.</span>
-              </li>
-              <li style={{ fontSize: '13px', display: 'flex', gap: '10px' }}>
-                <i className="fa-solid fa-circle-check" style={{ color: '#22c55e', marginTop: '2px' }}></i>
-                <span>Your topic relevance remains high (92%). Keep mapping arguments to structural framework models (PESTLE).</span>
-              </li>
-              <li style={{ fontSize: '13px', display: 'flex', gap: '10px' }}>
-                <i className="fa-solid fa-lightbulb" style={{ color: 'var(--accent-color)', marginTop: '2px' }}></i>
-                <span>Enhance vocabulary strength. Substitute standard words with synonyms like "systemic change" or "pivotal shift".</span>
-              </li>
+              {recommendations.map((rec, idx) => (
+                <li key={idx} style={{ fontSize: '13px', display: 'flex', gap: '10px' }}>
+                  <i className={idx === 0 ? "fa-solid fa-circle-exclamation" : idx === 1 ? "fa-solid fa-circle-check" : "fa-solid fa-lightbulb"} style={{ color: idx === 0 ? '#f59e0b' : idx === 1 ? '#22c55e' : 'var(--accent-color)', marginTop: '2px' }}></i>
+                  <span>{rec}</span>
+                </li>
+              ))}
             </ul>
           </div>
           <button className="btn btn-secondary btn-sm" style={{ marginTop: '16px', alignSelf: 'flex-start' }} onClick={() => setView('ai_feedback')}>
@@ -426,7 +487,7 @@ export function Dashboard({ setView, savedTopics = [] }) {
 // ==========================================
 // GD TOPIC LIBRARY VIEW
 // ==========================================
-export function TopicLibrary({ savedTopics, toggleSaveTopic, customTopics, setView }) {
+export function TopicLibrary({ savedTopics, toggleSaveTopic, customTopics, setView, setSelectedTopic }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedDifficulty, setSelectedDifficulty] = useState('All');
@@ -500,7 +561,7 @@ export function TopicLibrary({ savedTopics, toggleSaveTopic, customTopics, setVi
     // 10. Social Issues (5 Topics)
     { id: 46, name: 'Impact of cancel culture on corporate diversity and freedom of voice', category: 'Social Issues', difficulty: 'Medium', duration: '15 mins', participants: 7 },
     { id: 47, name: 'The gender pay gap: Structural biases vs. career choice choices', category: 'Social Issues', difficulty: 'Medium', duration: '15 mins', participants: 8 },
-    { id: 48, name: 'Immigration policies and cultural integration parameters in metropolitan hubs', category: 'Social Issues', difficulty: 'Medium', duration: '20 mins', participants: 6 },
+    { id: 48, name: 'Immigration policies and cultural integration parameters in metropolitan hubs', category: 'Social Issues', duration: '20 mins', participants: 6, difficulty: 'Medium' },
     { id: 49, name: 'Depicting crime in digital media: Public awareness tool or glorification?', category: 'Social Issues', difficulty: 'Easy', duration: '12 mins', participants: 8 },
     { id: 50, name: 'Aging populations and demographic shifts: Challenges for welfare pensions', category: 'Social Issues', difficulty: 'Hard', duration: '22 mins', participants: 6 }
   ];
@@ -572,8 +633,11 @@ export function TopicLibrary({ savedTopics, toggleSaveTopic, customTopics, setVi
                 <span><i className="fa-solid fa-users"></i> Max {topic.participants} Speakers</span>
               </div>
               <div style={{ display: 'flex', gap: '10px' }}>
-                <button className="btn btn-primary" style={{ flex: 1, padding: '10px', fontSize: '13px' }} onClick={() => setView('live_room')}>
+                <button className="btn btn-primary" style={{ flex: 1.2, padding: '10px 4px', fontSize: '12px' }} onClick={() => { if (setSelectedTopic) { setSelectedTopic(topic); } setView('live_room'); }}>
                   Start Room
+                </button>
+                <button className="btn btn-secondary" style={{ flex: 1, padding: '10px 4px', fontSize: '12px' }} onClick={() => { if (setSelectedTopic) { setSelectedTopic(topic); } setView('practice'); }}>
+                  Practice
                 </button>
                 <button className="btn btn-secondary" style={{ width: '40px', padding: '0', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => toggleSaveTopic(topic.id)}>
                   <i className={savedTopics.includes(topic.id) ? "fa-solid fa-bookmark" : "fa-regular fa-bookmark"} style={{ color: savedTopics.includes(topic.id) ? 'var(--primary-color)' : 'inherit' }}></i>
@@ -590,7 +654,7 @@ export function TopicLibrary({ savedTopics, toggleSaveTopic, customTopics, setVi
 // ==========================================
 // CREATE DISCUSSION ROOM VIEW
 // ==========================================
-export function CreateRoom({ setView, addLiveRoom }) {
+export function CreateRoom({ setView, addLiveRoom, setSelectedTopic }) {
   const [topic, setTopic] = useState('');
   const [duration, setDuration] = useState('15');
   const [maxUsers, setMaxUsers] = useState('6');
@@ -602,7 +666,7 @@ export function CreateRoom({ setView, addLiveRoom }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    addLiveRoom({
+    const newRoom = {
       id: Date.now(),
       topic,
       duration: `${duration} mins`,
@@ -610,8 +674,19 @@ export function CreateRoom({ setView, addLiveRoom }) {
       maxParticipants: maxUsers,
       aiModerator: aiMod ? 'Active' : 'Off',
       isPublic: isPublic ? 'Public' : 'Private'
-    });
-    setView('join_room');
+    };
+    addLiveRoom(newRoom);
+    if (setSelectedTopic) {
+      setSelectedTopic({
+        id: newRoom.id,
+        name: topic,
+        category: 'Technology',
+        difficulty: 'Medium',
+        duration: newRoom.duration,
+        participants: maxUsers
+      });
+    }
+    setView('live_room');
   };
 
   return (
@@ -703,7 +778,7 @@ export function CreateRoom({ setView, addLiveRoom }) {
 // ==========================================
 // JOIN DISCUSSION VIEW
 // ==========================================
-export function JoinRoom({ liveRooms, setView }) {
+export function JoinRoom({ liveRooms, setView, setSelectedTopic }) {
   const [micState, setMicState] = useState({});
   const [camState, setCamState] = useState({});
 
@@ -760,7 +835,19 @@ export function JoinRoom({ liveRooms, setView }) {
                 >
                   <i className={camState[room.id] ? "fa-solid fa-video-slash" : "fa-solid fa-video"}></i>
                 </button>
-                <button className="btn btn-primary" onClick={() => setView('live_room')}>
+                <button className="btn btn-primary" onClick={() => {
+                  if (setSelectedTopic) {
+                    setSelectedTopic({
+                      id: room.id,
+                      name: room.topic,
+                      category: 'Technology',
+                      difficulty: 'Medium',
+                      duration: room.duration,
+                      participants: room.maxParticipants
+                    });
+                  }
+                  setView('live_room');
+                }}>
                   Join Room <i className="fa-solid fa-right-to-bracket"></i>
                 </button>
               </div>
@@ -775,7 +862,11 @@ export function JoinRoom({ liveRooms, setView }) {
 // ==========================================
 // LIVE DISCUSSION ROOM VIEW
 // ==========================================
-export function LiveRoom({ setView }) {
+export function LiveRoom({ setView, topic, onAddHistory }) {
+  const topicName = topic?.name || 'Impact of AI & Tech Automation on General Labor Roles';
+  const category = topic?.category || 'Technology';
+  const difficulty = topic?.difficulty || 'Medium';
+
   const [seconds, setSeconds] = useState(900); // 15 minutes
   const [isMuted, setIsMuted] = useState(false);
   const [isCamOff, setIsCamOff] = useState(false);
@@ -783,15 +874,54 @@ export function LiveRoom({ setView }) {
   const [activeSpeaker, setActiveSpeaker] = useState('Sarah');
   const [queue, setQueue] = useState(['Sarah', 'Vikram', 'Priya']);
   const [poll, setPoll] = useState({ active: true, question: 'Do you agree that tech automation causes net employment loss?', yes: 12, no: 8 });
-  const [messages, setMessages] = useState([
-    { sender: 'AI Moderator', text: 'Welcome everyone! The topic is active. Please focus arguments on economic models.', self: false },
-    { sender: 'Sarah', text: 'I feel automation relocates skills rather than deleting net employment roles.', self: false }
-  ]);
+  const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
-  const [liveTranscript, setLiveTranscript] = useState('Speaker Sarah is highlighting the shift from blue-collar to white-collar tasks...');
+  const [liveTranscript, setLiveTranscript] = useState('Discussion starting... AI moderator is analyzing the topic framework.');
   
   // Real-time speaking score simulations
   const [speakScore, setSpeakScore] = useState({ participation: 45, confidence: 82, grammar: 88, vocab: 74, relevance: 91 });
+
+  // Set initial messages and poll based on the active topic
+  useEffect(() => {
+    const isTech = category.toLowerCase().includes('tech') || category.toLowerCase().includes('comput') || category.toLowerCase().includes('artificial');
+    const isEcon = category.toLowerCase().includes('econ') || category.toLowerCase().includes('business') || category.toLowerCase().includes('finance');
+    const isPol = category.toLowerCase().includes('polit') || category.toLowerCase().includes('govern');
+    
+    let defaultMsg1 = `Welcome everyone! The topic is active: "${topicName}". Please keep arguments constructive.`;
+    let defaultMsg2 = `I think this is a highly relevant issue today with significant societal impacts.`;
+    let defaultMsg3 = `How will this affect job security and general training frameworks?`;
+    let pollQ = `Do you support stronger regulation regarding this topic?`;
+
+    if (isTech) {
+      defaultMsg2 = `Technology shifts always disrupt historical jobs but eventually scale up global efficiency and yield new technical domains.`;
+      defaultMsg3 = `I agree, but the speed of transition is what worries me. Transition friction is very high for older labor groups.`;
+      pollQ = `Will tech advancements in this domain create more jobs than they eliminate?`;
+    } else if (isEcon) {
+      defaultMsg2 = `From an economic standpoint, the return on investment (ROI) drives adoption. Capital efficiency will dominate.`;
+      defaultMsg3 = `But we must consider the widening wealth gap and how retraining schemes are funded by corporate tax bases.`;
+      pollQ = `Should the government subsidize transitional retraining for affected labor?`;
+    } else if (isPol) {
+      defaultMsg2 = `State policy is lagging behind current developments. Regulatory sandboxes are critical before global rollouts.`;
+      defaultMsg3 = `Yes, but over-regulation runs the risk of capital flight. Developers will simply move to friendlier jurisdictions.`;
+      pollQ = `Is state intervention necessary to guide this development?`;
+    }
+
+    setMessages([
+      { sender: 'AI Moderator', text: defaultMsg1, self: false },
+      { sender: 'Sarah', text: defaultMsg2, self: false },
+      { sender: 'Vikram', text: defaultMsg3, self: false }
+    ]);
+    
+    setPoll({
+      active: true,
+      question: pollQ,
+      yes: 12,
+      no: 8
+    });
+
+    const initialSeconds = difficulty === 'Hard' ? 1200 : difficulty === 'Easy' ? 600 : 900;
+    setSeconds(initialSeconds);
+  }, [topicName, category, difficulty]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -807,7 +937,7 @@ export function LiveRoom({ setView }) {
       const nextSpeaker = names[Math.floor(Math.random() * names.length)];
       if (nextSpeaker === 'You' && isMuted) {
         setActiveSpeaker('Vikram');
-        setLiveTranscript('Vikram is commenting on retraining packages from corporate companies.');
+        setLiveTranscript(`Vikram: If we look at the historical data, previous shifts resulted in higher aggregate demand.`);
       } else {
         setActiveSpeaker(nextSpeaker);
         if (nextSpeaker === 'You') {
@@ -818,12 +948,21 @@ export function LiveRoom({ setView }) {
             confidence: Math.min(s.confidence + 1, 95)
           }));
         } else {
-          setLiveTranscript(`${nextSpeaker} is currently addressing issues relating to global GDP changes.`);
+          const isTech = category.toLowerCase().includes('tech') || category.toLowerCase().includes('comput') || category.toLowerCase().includes('artificial');
+          const isEcon = category.toLowerCase().includes('econ') || category.toLowerCase().includes('business') || category.toLowerCase().includes('finance');
+          
+          let quote = `${nextSpeaker}: The core issue is how we bridge the skills gap during this transition.`;
+          if (isTech) {
+            quote = `${nextSpeaker}: Algorithmic development is accelerating. Standard encryption or legacy systems will struggle to keep up.`;
+          } else if (isEcon) {
+            quote = `${nextSpeaker}: Wealth redistribution via taxing automation gains could offset short-term labor dislocation.`;
+          }
+          setLiveTranscript(quote);
         }
       }
     }, 12000);
     return () => clearInterval(speakTimer);
-  }, [isMuted]);
+  }, [isMuted, category]);
 
   const handleSendMessage = () => {
     if (inputValue.trim()) {
@@ -841,6 +980,23 @@ export function LiveRoom({ setView }) {
     setInQueue(!inQueue);
   };
 
+  const handleLeaveRoom = () => {
+    const finalScore = Math.round((speakScore.confidence + speakScore.grammar + speakScore.relevance + speakScore.vocab) / 4);
+    const badge = finalScore > 90 ? 'Excellent Communicator' : finalScore > 80 ? 'Consistent Performer' : 'Rising Speaker';
+    
+    if (onAddHistory) {
+      onAddHistory({
+        date: new Date().toISOString().split('T')[0],
+        topic: topicName,
+        duration: difficulty === 'Hard' ? '20m' : difficulty === 'Easy' ? '10m' : '15m',
+        participants: 6,
+        score: finalScore,
+        badge: badge
+      });
+    }
+    setView('ai_feedback');
+  };
+
   const formatTime = (sec) => {
     const m = Math.floor(sec / 60).toString().padStart(2, '0');
     const s = (sec % 60).toString().padStart(2, '0');
@@ -853,13 +1009,13 @@ export function LiveRoom({ setView }) {
       <div className="card-glass" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 24px' }}>
         <div>
           <span className="badge badge-medium" style={{ marginBottom: '4px' }}>Live Room</span>
-          <h2 style={{ fontSize: '18px' }}>Impact of AI & Tech Automation on General Labor Roles</h2>
+          <h2 style={{ fontSize: '18px' }}>{topicName}</h2>
         </div>
         <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
           <span style={{ fontSize: '20px', fontFamily: 'Outfit', fontWeight: '800', color: '#ef4444' }}>
             <i className="fa-solid fa-stopwatch"></i> {formatTime(seconds)}
           </span>
-          <button className="btn btn-danger btn-sm" onClick={() => setView('ai_feedback')}>
+          <button className="btn btn-danger btn-sm" onClick={handleLeaveRoom}>
             Leave Room
           </button>
         </div>
@@ -1342,15 +1498,16 @@ export function Leaderboard() {
 // ==========================================
 // PRACTICE MODE VIEW
 // ==========================================
-export function PracticeMode() {
-  const [topic, setTopic] = useState('Impact of GenAI on white-collar jobs');
+export function PracticeMode({ topic }) {
+  const topicName = topic?.name || 'Impact of GenAI on white-collar jobs';
+  
   const [chat, setChat] = useState([
-    { sender: 'AI Evaluator', text: "Hello! Welcome to Practice Sandbox. We'll examine 'Impact of GenAI on white-collar jobs'. To start, what is your view on AI replacing traditional developers and technical documentation writers?", scores: null }
+    { sender: 'AI Evaluator', text: `Hello! Welcome to Practice Sandbox. We'll examine '${topicName}'. To start, what is your view on this topic and its key challenges?`, scores: null }
   ]);
   const [userInput, setUserInput] = useState('');
   const [isEvaluating, setIsEvaluating] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!userInput.trim()) return;
 
@@ -1359,23 +1516,85 @@ export function PracticeMode() {
     setUserInput('');
     setIsEvaluating(true);
 
-    // Simulate AI moderator thinking and grading structure
+    try {
+      const historyLog = chat.map(m => `${m.sender}: ${m.text}`).join('\n');
+      const res = await fetch('http://localhost:8080/api/feedback/evaluate-speech', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic: topicName, speechText: userMsg.text, history: historyLog })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setChat(prev => [
+          ...prev,
+          {
+            sender: 'AI Evaluator',
+            text: data.text,
+            scores: {
+              overall: data.overallScore,
+              grammar: data.metrics?.grammar || 80,
+              vocabulary: data.metrics?.vocabulary || 80,
+              relevance: data.metrics?.relevance || 80,
+              correction: data.corrections || 'No major issues flagged.'
+            }
+          }
+        ]);
+        setIsEvaluating(false);
+        return;
+      }
+    } catch (err) {
+      console.warn("Backend evaluation API down. Falling back to local offline simulation:", err);
+    }
+
+    // Client-side fallback if backend is offline
     setTimeout(() => {
-      const evaluation = {
-        overall: 84,
-        grammar: 88,
-        vocabulary: 78,
-        relevance: 92,
-        correction: "Minor fix: Use 'disruption' instead of 'collapsation'.",
-        text: "Excellent point regarding automation. Generative models act as force-multipliers rather than full replacements. Next, how should colleges adapt curricula to support this paradigm shift?"
-      };
-      
+      const cleanedInput = userMsg.text.trim().toLowerCase();
+      let grammar = 90;
+      let correction = "No major spelling or grammatical errors flagged.";
+
+      const hasFillers = cleanedInput.includes("basically") || cleanedInput.includes("actually") 
+              || cleanedInput.includes("like") || cleanedInput.includes("uh") || cleanedInput.includes("um");
+      if (hasFillers) {
+        grammar = 78;
+        correction = "Grammar focus: Minimize usage of filler phrases ('basically', 'actually', 'like'). Try inserting short pauses instead.";
+      }
+
+      let vocabulary = Math.min(95, Math.max(65, 70 + Math.floor(cleanedInput.length / 20)));
+      if (cleanedInput.includes("pivotal") || cleanedInput.includes("paradigm") || cleanedInput.includes("fundamental") || cleanedInput.includes("infrastructure")) {
+        vocabulary = Math.min(98, vocabulary + 5);
+      }
+
+      let relevance = 85;
+      const keywords = topicName.toLowerCase().split(/\s+/);
+      let matches = 0;
+      keywords.forEach(word => {
+        if (word.length > 3 && cleanedInput.toLowerCase().includes(word)) {
+          matches++;
+        }
+      });
+      relevance = Math.min(100, Math.max(70, 75 + (matches * 6)));
+      const overall = Math.round((grammar + vocabulary + relevance + 85) / 4);
+
+      let replyText;
+      if (cleanedInput.includes("?") || cleanedInput.includes("how") || cleanedInput.includes("why") || cleanedInput.includes("what is")) {
+        replyText = `That's a very perceptive question regarding the details of '${topicName}'. From an analytical perspective, addressing this requires structured framework planning. For instance, we must consider the trade-offs between speed of implementation and safety guidelines. To keep our discussion progressing, how do you think we can incentivize institutions to manage these risks?`;
+      } else {
+        let keyPhrase = "your point";
+        for (let word of keywords) {
+          if (word.length > 4 && cleanedInput.includes(word)) {
+            keyPhrase = `your focus on "${word}"`;
+            break;
+          }
+        }
+        replyText = `Excellent input regarding ${keyPhrase}. It highlights the necessity of balancing innovation against the socio-economic impacts. Building on this perspective, how should educational hubs and corporate developers prepare for this paradigm shift?`;
+      }
+
       setChat(prev => [
         ...prev,
         {
           sender: 'AI Evaluator',
-          text: evaluation.text,
-          scores: evaluation
+          text: replyText,
+          scores: { overall, grammar, vocabulary, relevance, correction }
         }
       ]);
       setIsEvaluating(false);
@@ -1393,7 +1612,7 @@ export function PracticeMode() {
         {/* Chat Header */}
         <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: '14px', fontWeight: 'bold' }}><i className="fa-solid fa-robot"></i> AI Practice Session</span>
-          <span className="badge badge-medium" style={{ fontSize: '10px' }}>Topic: {topic}</span>
+          <span className="badge badge-medium" style={{ fontSize: '10px' }}>Topic: {topicName}</span>
         </div>
 
         {/* Chat messages stream */}
@@ -1419,16 +1638,15 @@ export function PracticeMode() {
                   <div><strong>Overall:</strong> {msg.scores.overall}%</div>
                   <div><strong>Grammar:</strong> {msg.scores.grammar}%</div>
                   <div><strong>Vocab:</strong> {msg.scores.vocabulary}%</div>
-                  <div style={{ color: 'var(--accent-color)' }}>{msg.scores.correction}</div>
+                  <div><strong>Relevance:</strong> {msg.scores.relevance}%</div>
+                  <div style={{ gridColumn: 'span 4', borderTop: '1px solid var(--border-color)', paddingTop: '6px', color: 'var(--accent-color)' }}>
+                    <strong>Phrase Correction:</strong> {msg.scores.correction}
+                  </div>
                 </div>
               )}
             </div>
           ))}
-          {isEvaluating && (
-            <div style={{ alignSelf: 'flex-start', fontSize: '12px', color: 'var(--text-muted)' }}>
-              <i className="fa-solid fa-spinner fa-spin"></i> AI Evaluator is analyzing your response...
-            </div>
-          )}
+          {isEvaluating && <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}><i className="fa-solid fa-spinner fa-spin"></i> AI Evaluator is formulating speech feedback...</div>}
         </div>
 
         {/* Input panel */}
@@ -1453,15 +1671,28 @@ export function PracticeMode() {
 // ==========================================
 // PROFILE VIEW
 // ==========================================
-export function Profile() {
+export function Profile({ userData, onUpdateProfile }) {
   const [profile, setProfile] = useState({
-    name: 'You (Speaker)',
-    college: 'Vellore Institute of Technology',
-    email: 'speaker@vit.edu',
-    bio: 'Passionate computer science student targeting software engineering and consulting roles. Actively training on placement interview parameters.',
-    skills: 'Java, React, SQL, Logic structures'
+    name: userData?.profile?.name || 'You (Speaker)',
+    college: userData?.profile?.college || 'Vellore Institute of Technology',
+    email: userData?.profile?.email || 'speaker@vit.edu',
+    bio: userData?.profile?.bio || 'Passionate computer science student targeting software engineering and consulting roles. Actively training on placement interview parameters.',
+    skills: userData?.profile?.skills || 'Java, React, SQL, Logic structures'
   });
   const [editMode, setEditMode] = useState(false);
+
+  useEffect(() => {
+    if (userData?.profile) {
+      setProfile(userData.profile);
+    }
+  }, [userData]);
+
+  const handleToggleEdit = () => {
+    if (editMode) {
+      onUpdateProfile(profile);
+    }
+    setEditMode(!editMode);
+  };
 
   return (
     <div className="view-container">
@@ -1474,7 +1705,7 @@ export function Profile() {
         {/* Profile Card Summary */}
         <div className="card-glass" style={{ textAlign: 'center', padding: '32px' }}>
           <div style={{ width: '96px', height: '96px', borderRadius: '50%', backgroundColor: 'var(--primary-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '36px', fontWeight: 'bold', margin: '0 auto 16px' }}>
-            Y
+            {profile.name ? profile.name[0].toUpperCase() : 'Y'}
           </div>
           <h2 style={{ fontSize: '20px' }}>{profile.name}</h2>
           <p style={{ color: 'var(--primary-color)', fontSize: '13px', marginTop: '4px' }}>{profile.college}</p>
@@ -1490,7 +1721,7 @@ export function Profile() {
         <div className="card-glass">
           <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px', marginBottom: '20px' }}>
             <h3 style={{ fontSize: '18px' }}>Speaker Information</h3>
-            <button className="btn btn-secondary btn-sm" style={{ padding: '6px 16px', fontSize: '12px' }} onClick={() => setEditMode(!editMode)}>
+            <button className="btn btn-secondary btn-sm" style={{ padding: '6px 16px', fontSize: '12px' }} onClick={handleToggleEdit}>
               {editMode ? 'Save Changes' : 'Edit Profile'}
             </button>
           </div>
@@ -1512,6 +1743,10 @@ export function Profile() {
               <div className="form-group">
                 <label className="form-label">Bio Description</label>
                 <textarea className="form-control" rows={3} value={profile.bio} onChange={e => setProfile({ ...profile, bio: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Skills List</label>
+                <input type="text" className="form-control" value={profile.skills} onChange={e => setProfile({ ...profile, skills: e.target.value })} />
               </div>
             </div>
           ) : (

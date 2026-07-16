@@ -27,6 +27,17 @@ export default function App() {
     { id: 102, topic: 'Impact of social media on teenage mental health', duration: '20 mins', participants: 3, maxParticipants: 8, aiModerator: 'Active', isPublic: 'Public' }
   ]);
   
+  const [selectedTopic, setSelectedTopic] = useState({
+    id: 1,
+    name: 'Impact of AI & Tech Automation on General Labor Roles',
+    category: 'Artificial Intelligence',
+    difficulty: 'Hard',
+    duration: '15 mins',
+    participants: 6
+  });
+
+  const [userData, setUserData] = useState(null);
+
   const [notifications, setNotifications] = useState([
     { id: 1, text: 'Vikram Mehta invited you to GD Room #401', time: '5m ago' },
     { id: 2, text: 'Your speech report on EV Viability is ready', time: '1h ago' }
@@ -45,6 +56,50 @@ export default function App() {
     }
   }, [isDarkMode]);
 
+  // Load and cache user-specific metrics, suggestions, and history logs
+  useEffect(() => {
+    if (user && user.email) {
+      const key = `gdverse_user_${user.email}`;
+      const stored = localStorage.getItem(key);
+      if (stored) {
+        setUserData(JSON.parse(stored));
+      } else {
+        const hash = Array.from(user.email).reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        const scoreSeed = (hash % 12) + 80; // 80 - 91
+        const initialData = {
+          profile: {
+            name: user.name || user.email.split('@')[0].split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' '),
+            college: user.college || (user.email.endsWith('.edu') ? 'Vellore Institute of Technology' : 'National Institute of Technology'),
+            email: user.email,
+            bio: user.bio || 'Passionate student targeting software engineering and consulting roles. Actively training on placement interview parameters.',
+            skills: user.skills || 'Java, React, SQL, Logic structures'
+          },
+          metrics: {
+            overall: scoreSeed,
+            grammar: (hash % 10) + 85,
+            confidence: (hash % 8) + 82,
+            relevance: (hash % 6) + 90,
+            vocabulary: (hash % 14) + 72
+          },
+          history: [
+            { date: '2026-07-14', topic: 'Will Generative AI destroy software engineering jobs?', duration: '20m', participants: 6, score: scoreSeed - 2, badge: 'Rising Speaker' },
+            { date: '2026-07-10', topic: 'Impact of social media on teenage mental health', duration: '15m', participants: 5, score: scoreSeed - 5, badge: 'Consistent Performer' },
+            { date: '2026-07-05', topic: 'The viability of electric vehicles in developing nations', duration: '12m', participants: 8, score: scoreSeed + 3, badge: 'Excellent Communicator' }
+          ],
+          recommendations: [
+            `Decrease frequency of filler words (e.g. "uhm", "basically", "actually") by pausing 1-2 seconds.`,
+            `Your topic relevance remains high (${(hash % 6) + 90}%). Keep mapping arguments to structural framework models (PESTLE).`,
+            `Enhance vocabulary strength. Substitute standard words with synonyms like "systemic change" or "pivotal shift".`
+          ]
+        };
+        localStorage.setItem(key, JSON.stringify(initialData));
+        setUserData(initialData);
+      }
+    } else {
+      setUserData(null);
+    }
+  }, [user]);
+
   const handleLogin = (userData) => {
     setUser(userData);
     setView('dashboard');
@@ -54,6 +109,24 @@ export default function App() {
     setUser(null);
     setView('landing');
     setProfileDropdownOpen(false);
+  };
+
+  const handleUpdateProfile = (updatedProfile) => {
+    const updatedData = { ...userData, profile: updatedProfile };
+    setUserData(updatedData);
+    if (user && user.email) {
+      localStorage.setItem(`gdverse_user_${user.email}`, JSON.stringify(updatedData));
+    }
+  };
+
+  const handleAddHistory = (sessionSummary) => {
+    if (!userData) return;
+    const newHistory = [sessionSummary, ...userData.history];
+    const updatedData = { ...userData, history: newHistory };
+    setUserData(updatedData);
+    if (user && user.email) {
+      localStorage.setItem(`gdverse_user_${user.email}`, JSON.stringify(updatedData));
+    }
   };
 
   const toggleSaveTopic = (id) => {
@@ -235,16 +308,16 @@ export default function App() {
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {view === 'landing' && <LandingPage setView={setView} />}
           {(view === 'login' || view === 'register') && <Auth view={view} setView={setView} onLogin={handleLogin} />}
-          {view === 'dashboard' && <Dashboard setView={setView} savedTopics={savedTopics} />}
-          {view === 'topic_library' && <TopicLibrary savedTopics={savedTopics} toggleSaveTopic={toggleSaveTopic} customTopics={customTopics} setView={setView} />}
-          {view === 'create_room' && <CreateRoom setView={setView} addLiveRoom={addLiveRoom} />}
-          {view === 'join_room' && <JoinRoom liveRooms={liveRooms} setView={setView} />}
-          {view === 'live_room' && <LiveRoom setView={setView} />}
-          {view === 'ai_feedback' && <AiFeedbackPage />}
-          {view === 'history' && <PerformanceHistory />}
+          {view === 'dashboard' && <Dashboard setView={setView} savedTopics={savedTopics} userData={userData} setSelectedTopic={setSelectedTopic} />}
+          {view === 'topic_library' && <TopicLibrary savedTopics={savedTopics} toggleSaveTopic={toggleSaveTopic} customTopics={customTopics} setView={setView} setSelectedTopic={setSelectedTopic} />}
+          {view === 'create_room' && <CreateRoom setView={setView} addLiveRoom={addLiveRoom} setSelectedTopic={setSelectedTopic} />}
+          {view === 'join_room' && <JoinRoom liveRooms={liveRooms} setView={setView} setSelectedTopic={setSelectedTopic} />}
+          {view === 'live_room' && <LiveRoom setView={setView} topic={selectedTopic} onAddHistory={handleAddHistory} />}
+          {view === 'ai_feedback' && <AiFeedbackPage history={userData ? userData.history[0] : null} />}
+          {view === 'history' && <PerformanceHistory userData={userData} />}
           {view === 'leaderboard' && <Leaderboard />}
-          {view === 'practice' && <PracticeMode />}
-          {view === 'profile' && <Profile />}
+          {view === 'practice' && <PracticeMode topic={selectedTopic} setSelectedTopic={setSelectedTopic} />}
+          {view === 'profile' && <Profile userData={userData} onUpdateProfile={handleUpdateProfile} />}
           {view === 'settings' && <Settings isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />}
           {view === 'admin' && <AdminDashboard onAddTopic={addCustomTopic} />}
         </div>

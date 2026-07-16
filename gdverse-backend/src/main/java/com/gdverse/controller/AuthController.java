@@ -19,6 +19,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
+@CrossOrigin(origins = "*")
 public class AuthController {
 
     @Autowired
@@ -45,9 +46,18 @@ public class AuthController {
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String jwt = tokenProvider.generateToken(authentication);
 
-        Map<String, String> response = new HashMap<>();
+        com.gdverse.model.User user = userRepository.findByEmail(loginRequest.getEmail())
+                .orElseThrow(() -> new org.springframework.security.core.userdetails.UsernameNotFoundException("User not found"));
+
+        Map<String, Object> response = new HashMap<>();
         response.put("token", jwt);
-        response.put("email", loginRequest.getEmail());
+        response.put("email", user.getEmail());
+        response.put("id", user.getId());
+        response.put("name", user.getName());
+        response.put("college", user.getCollege());
+        response.put("bio", user.getBio());
+        response.put("skills", user.getSkills());
+        response.put("overallScore", user.getOverallScore());
         return ResponseEntity.ok(response);
     }
 

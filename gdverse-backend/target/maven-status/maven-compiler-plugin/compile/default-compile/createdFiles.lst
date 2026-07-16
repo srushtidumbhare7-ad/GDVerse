@@ -1,0 +1,11 @@
+com\gdverse\GdverseApplication.class
+com\gdverse\model\Topic.class
+com\gdverse\model\User.class
+com\gdverse\repository\RoomRepository.class
+com\gdverse\model\Feedback.class
+com\gdverse\model\PerformanceHistory.class
+com\gdverse\security\JwtTokenProvider.class
+com\gdverse\repository\PerformanceHistoryRepository.class
+com\gdverse\security\JwtAuthenticationFilter.class
+com\gdverse\model\Room.class
+com\gdverse\repository\FeedbackRepository.class
